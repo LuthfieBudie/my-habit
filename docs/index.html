@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="static/style.css">
+
+    <!-- PWA: supaya bisa di-install jadi aplikasi -->
+    <meta name="theme-color" content="#f0f1f3">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="static/icons/icon-192.png">
+    <link rel="apple-touch-icon" href="static/icons/apple-touch-icon.png">
+    <title>My Habit</title>
+</head>
+<body>
+    <!-- ===== TOPBAR (ikut turun saat di-scroll) ===== -->
+    <header class="topbar" id="topbar">
+        <div class="brand">
+            <span class="logo">MH</span>
+            <span class="brand-name">My Habit</span>
+        </div>
+
+        <nav class="nav">
+            <a href="#" class="pill active" data-target="dashboardTop">Dashboard</a>
+            <a href="#" class="pill" data-target="habitCard">Habits</a>
+            <a href="#" class="pill" data-target="scheduleCard">Schedule</a>
+            <a href="#" class="pill" data-target="todoCard">To-do</a>
+            <a href="#" class="pill" data-target="calendarCard">Calendar</a>
+            <a href="#" class="pill" data-target="projectCard">Projects</a>
+        </nav>
+
+        <div class="topbar-right">
+            <div class="notif-wrap">
+                <button class="icon-btn" id="notifBtn" title="Notifications">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                    <span class="notif-badge" id="notifBadge"></span>
+                </button>
+
+                <div class="notif-panel" id="notifPanel">
+                    <div class="notif-head">
+                        <b>Today</b>
+                        <span class="muted" id="notifDate"></span>
+                    </div>
+                    <ul class="notif-list" id="notifList"></ul>
+                </div>
+            </div>
+            <!-- menu data: Export / Import (data versi lokal hanya ada di perangkat ini) -->
+            <div class="notif-wrap">
+                <button class="avatar" id="menuBtn" title="Your data">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+                </button>
+                <div class="notif-panel data-menu" id="dataMenu">
+                    <div class="notif-head"><b>Your data</b></div>
+                    <p class="data-note">Everything is saved only on this device. Export a backup regularly, or to move to another device.</p>
+                    <button class="data-btn" id="exportBtn">Export backup (.json)</button>
+                    <button class="data-btn light" id="importBtn">Import backup</button>
+                    <input type="file" id="importFile" accept=".json,application/json" hidden>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== JUDUL HALAMAN ===== -->
+    <section class="page-head" id="dashboardTop">
+        <div class="title-wrap">
+            <a href="checkin.html" class="icon-btn" title="Check-in">‹</a>
+            <div>
+                <h1>Habit Dashboard</h1>
+                <p>An overview of your activities and habits</p>
+            </div>
+        </div>
+
+        <!-- pindah bulan: sebelumnya / berikutnya -->
+        <div class="head-actions">
+            <button class="pill head-btn" id="prevMonthBtn" title="Previous month">‹ <span id="prevMonthLabel"></span></button>
+            <button class="btn-dark head-btn" id="nextMonthBtn" title="Next month"><span id="nextMonthLabel"></span> ›</button>
+        </div>
+    </section>
+
+    <!-- ===== KONTEN ===== -->
+    <main class="maintab">
+        <!-- KOLOM KIRI ATAS -->
+        <aside class="leftbar">
+            <div class="card month">
+                <div class="card-head">
+                    <div><span class="eyebrow">Month</span><h3 id="monthLabel"></h3></div>
+                    <button class="corner" id="monthBtn" title="Change month">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="bottomleftbar">
+                <div class="card toplist">
+                    <span class="eyebrow">Most consistent</span>
+                    <ol class="rank-list" id="topList"></ol>
+                </div>
+                <div class="card leastlist">
+                    <span class="eyebrow">Least consistent</span>
+                    <ol class="rank-list" id="leastList"></ol>
+                </div>
+            </div>
+        </aside>
+
+        <!-- BARIS ATAS: 3 CHART -->
+        <div class="card chart-card">
+            <div class="chart-head">
+                <div>
+                    <span class="eyebrow">Monthly</span>
+                    <div class="stat"><span id="monthlyStat">0%</span> <span class="tag lime" id="monthlyTag">+0%</span></div>
+                </div>
+                <span class="muted" id="monthlyLabel"></span>
+            </div>
+            <div class="chart" id="monthlyChart"></div>
+        </div>
+
+        <div class="card chart-card">
+            <div class="chart-head">
+                <div>
+                    <span class="eyebrow">Weekly</span>
+                    <div class="stat"><span id="weeklyStat">0%</span> <span class="tag lime" id="weeklyTag">+0%</span></div>
+                </div>
+                <span class="muted" id="weeklyLabel"></span>
+            </div>
+            <div class="chart" id="weeklyChart"></div>
+        </div>
+
+        <div class="card chart-card">
+            <div class="chart-head">
+                <div>
+                    <span class="eyebrow">Daily</span>
+                    <div class="stat"><span id="dailyStat">0%</span> <span class="tag lime" id="dailyTag">+0%</span></div>
+                </div>
+                <span class="muted" id="dailyLabel"></span>
+            </div>
+            <div class="chart" id="dailyChart"></div>
+        </div>
+
+        <!-- BARIS TENGAH -->
+        <div class="card habit drop-zone" id="habitCard">
+            <div class="card-head">
+                <h3>Habit Tracker</h3>
+                <div class="head-tools">
+                    <span class="hint">Click a name to edit • drag a name to move it</span>
+                    <button class="corner" id="addHabitBtn">+</button>
+                </div>
+            </div>
+            <div class="tracker-wrap">
+                <table class="tracker">
+                    <thead id="trackerHead"></thead>
+                    <tbody id="trackerBody"></tbody>
+                </table>
+            </div>
+            <div class="drop-message">Drop here to add it to the tracker</div>
+        </div>
+
+        <!-- SCHEDULE: habit "Once" & "Date range" (tabelnya sama dengan Habit Tracker) -->
+        <div class="card habit schedule-card drop-zone" id="scheduleCard">
+            <div class="card-head">
+                <div><span class="eyebrow">One-time &amp; date range</span><h3>Schedule</h3></div>
+                <div class="head-tools">
+                    <span class="hint">Habits set to Once or Date range show up here</span>
+                    <button class="corner" id="addScheduleBtn">+</button>
+                </div>
+            </div>
+            <div class="tracker-wrap">
+                <table class="tracker">
+                    <thead id="scheduleHead"></thead>
+                    <tbody id="scheduleBody"></tbody>
+                </table>
+            </div>
+            <div class="drop-message">Drop here to add it to the schedule</div>
+        </div>
+
+        <!-- KOLOM KANAN: Overall (tetap) + Analysis (memanjang) -->
+        <div class="sidebar">
+            <div class="card overall">
+                <span class="eyebrow">Overall</span>
+                <div class="overall-body">
+                    <div class="pie" id="overallPie"><span id="overallPercent">0%</span></div>
+                    <ul class="pie-legend">
+                        <li><span class="dot done"></span>Done <b id="overallDone">0</b></li>
+                        <li><span class="dot missed"></span>Missed <b id="overallMissed">0</b></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card analyst">
+                <div class="card-head">
+                    <div><span class="eyebrow">Insight</span><h3>Analysis</h3></div>
+                </div>
+                <div class="analysis-wrap">
+                    <table class="analysis">
+                        <thead>
+                            <tr><th>Habit</th><th>Goal</th><th>Done</th><th>Left</th><th>Percentage</th></tr>
+                        </thead>
+                        <tbody id="analysisBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- BARIS BAWAH -->
+        <div class="card todo-card drop-zone" id="todoCard">
+            <div class="card-head">
+                <div><span class="eyebrow">Plans</span><h3>To-do</h3></div>
+                <button class="corner" id="addTodoBtn">+</button>
+            </div>
+            <p class="hint">Drag to the Habit Tracker to make it a habit</p>
+            <ul class="item-list" id="todoList"></ul>
+            <div class="drop-message">Drop to move to To-do</div>
+        </div>
+
+        <div class="card archive-card drop-zone" id="archiveCard">
+            <div class="card-head">
+                <div><span class="eyebrow">No longer used</span><h3>Archive</h3></div>
+            </div>
+            <p class="hint">Drag a habit here to archive it</p>
+            <ul class="item-list" id="archiveList"></ul>
+            <div class="drop-message">Drop to archive</div>
+        </div>
+
+        <div class="card compare-card">
+            <div class="card-head">
+                <div><span class="eyebrow">Side by side</span><h3>Compare</h3></div>
+            </div>
+
+            <div class="compare-slot drop-zone empty" id="compareSlotA">
+                <div class="compare-head">
+                    <i class="compare-dot a"></i>
+                    <select class="compare-select" id="compareSelectA"></select>
+                    <span class="compare-stat" id="compareStatA"></span>
+                    <button class="item-btn" id="compareClearA" title="Clear">✕</button>
+                </div>
+                <div class="chart compare-chart" id="compareChartA"></div>
+                <div class="compare-empty">Drag a habit or to-do here, or pick one above</div>
+                <div class="compare-nodata">No check-ins yet — it's still a to-do</div>
+                <div class="drop-message">Drop to compare</div>
+            </div>
+
+            <div class="compare-slot drop-zone empty" id="compareSlotB">
+                <div class="compare-head">
+                    <i class="compare-dot b"></i>
+                    <select class="compare-select" id="compareSelectB"></select>
+                    <span class="compare-stat" id="compareStatB"></span>
+                    <button class="item-btn" id="compareClearB" title="Clear">✕</button>
+                </div>
+                <div class="chart compare-chart" id="compareChartB"></div>
+                <div class="compare-empty">Drag a habit or to-do here, or pick one above</div>
+                <div class="compare-nodata">No check-ins yet — it's still a to-do</div>
+                <div class="drop-message">Drop to compare</div>
+            </div>
+        </div>
+        <!-- BARIS PALING BAWAH -->
+        <div class="card calendar-card" id="calendarCard">
+            <div class="card-head">
+                <div><span class="eyebrow">Calendar</span><h3 id="calendarLabel"></h3></div>
+            </div>
+
+            <!-- filter: tampilkan semua, atau hanya satu prioritas -->
+            <div class="cal-filter" id="calFilter">
+                <button type="button" data-filter="all" class="active">All</button>
+                <button type="button" data-filter="crucial"><i class="p-dot crucial"></i>Critical</button>
+                <button type="button" data-filter="important"><i class="p-dot important"></i>Important</button>
+                <button type="button" data-filter="routine"><i class="p-dot normal"></i>Routine</button>
+            </div>
+
+            <div class="calendar-grid" id="calendarGrid"></div>
+
+            <!-- keterangan warna -->
+            <div class="calendar-legend">
+                <span><i class="leg c-red"></i>Critical / deadline</span>
+                <span><i class="leg c-orange"></i>Important / due in 3 days</span>
+                <span><i class="leg g-1"></i><i class="leg g-2"></i><i class="leg g-4"></i>Done (more = darker)</span>
+                <span><i class="leg note"></i>Has a note</span>
+            </div>
+        </div>
+
+        <div class="card notes-card">
+            <div class="card-head">
+                <div><span class="eyebrow">Notes</span><h3 id="notesDate"></h3></div>
+                <span class="hint">Pick a day on the calendar</span>
+            </div>
+            <div class="notes-list" id="notesList"></div>
+            <form class="note-form" id="noteForm">
+                <textarea id="noteInput" rows="1" maxlength="2000" placeholder="Write a note…"></textarea>
+                <button type="submit" class="send-btn" title="Send">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                </button>
+            </form>
+        </div>
+
+        <!-- ACTIVE PROJECTS -->
+        <div class="card project-card" id="projectCard">
+            <div class="card-head">
+                <div><span class="eyebrow">Deadlines</span><h3>Active Projects</h3></div>
+                <button class="corner" id="addProjectBtn">+</button>
+            </div>
+            <p class="hint">Click a name to edit • drag to reorder</p>
+            <ul class="item-list project-list" id="projectList"></ul>
+        </div>
+    </main>
+
+    <!-- ===== MODAL HABIT / TO-DO (tambah & edit) ===== -->
+    <div class="modal" id="itemModal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 id="itemModalTitle">New Habit</h3>
+                <button class="corner" id="closeItemBtn">✕</button>
+            </div>
+
+            <form id="itemForm">
+                <label class="field-label" for="itemName">Name</label>
+                <input type="text" id="itemName" maxlength="100" placeholder="e.g. Sleep 8 hours">
+
+                <span class="field-label">Schedule</span>
+                <div class="segmented">
+                    <label><input type="radio" name="schedule" value="everyday" checked><span>Everyday</span></label>
+                    <label><input type="radio" name="schedule" value="weekday"><span>Weekday</span></label>
+                    <label><input type="radio" name="schedule" value="once"><span>Once</span></label>
+                    <label><input type="radio" name="schedule" value="custom"><span>Custom</span></label>
+                </div>
+
+                <div class="once-box" id="onceBox">
+                    <span class="field-label">On date</span>
+                    <input type="date" id="onceDate">
+                </div>
+
+                <div class="start-box" id="startBox">
+                    <span class="field-label">Start from</span>
+                    <div class="start-row">
+                        <div class="segmented small">
+                            <label><input type="radio" name="startMode" value="now" checked><span>Today</span></label>
+                            <label><input type="radio" name="startMode" value="pick"><span>Pick a date</span></label>
+                        </div>
+                        <input type="date" id="startFrom">
+                    </div>
+                </div>
+
+                <div class="custom-box" id="customBox">
+                    <div class="segmented small">
+                        <label><input type="radio" name="customMode" value="per_week" checked><span>Times per week</span></label>
+                        <label><input type="radio" name="customMode" value="range"><span>Date range</span></label>
+                    </div>
+
+                    <div class="custom-field" id="perWeekField">
+                        <input type="number" id="timesPerWeek" min="1" max="7" value="3">
+                        <span>times per week</span>
+                    </div>
+
+                    <div class="custom-field" id="rangeField">
+                        <input type="date" id="startDate">
+                        <span>to</span>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+
+                <span class="field-label">Priority</span>
+                <div class="segmented priority">
+                    <label><input type="radio" name="priority" value="crucial"><span><i class="p-dot crucial"></i>Critical</span></label>
+                    <label><input type="radio" name="priority" value="important"><span><i class="p-dot important"></i>Important</span></label>
+                    <label><input type="radio" name="priority" value="normal" checked><span><i class="p-dot normal"></i>Routine</span></label>
+                </div>
+
+                <p class="form-error" id="itemError"></p>
+
+                <div class="modal-actions">
+                    <button type="button" class="pill danger" id="itemDangerBtn">Archive</button>
+                    <button type="button" class="pill" id="cancelItemBtn">Cancel</button>
+                    <button type="submit" class="btn-dark">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== MODAL PILIH BULAN ===== -->
+    <div class="modal" id="monthModal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3>Choose Month</h3>
+                <button class="corner" id="closeMonthBtn">✕</button>
+            </div>
+            <form id="monthForm">
+                <div class="month-fields">
+                    <div>
+                        <label class="field-label" for="monthSelect">Month</label>
+                        <select id="monthSelect"></select>
+                    </div>
+                    <div>
+                        <label class="field-label" for="yearSelect">Year</label>
+                        <select id="yearSelect"></select>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="pill" id="thisMonthBtn">This month</button>
+                    <button type="submit" class="btn-dark">Show</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- ===== MODAL PROJECT ===== -->
+    <div class="modal" id="projectModal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 id="projectModalTitle">New Project</h3>
+                <button class="corner" id="closeProjectBtn">✕</button>
+            </div>
+            <form id="projectForm">
+                <label class="field-label" for="projectName">Project name</label>
+                <input type="text" id="projectName" maxlength="100" placeholder="e.g. Finish portfolio website">
+
+                <label class="field-label" for="projectDeadline">Deadline</label>
+                <input type="date" id="projectDeadline">
+
+                <p class="form-error" id="projectError"></p>
+
+                <div class="modal-actions">
+                    <button type="button" class="pill danger" id="deleteProjectBtn">Delete</button>
+                    <button type="button" class="pill" id="cancelProjectBtn">Cancel</button>
+                    <button type="submit" class="btn-dark">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- localapi.js PALING DULU: menjawab semua fetch("/api/...") dari penyimpanan perangkat -->
+    <script src="static/localapi.js"></script>
+    <script src="static/pwa.js"></script>
+    <script src="static/script.js"></script>
+    <script src="static/backup.js"></script>
+    <script src="static/dragscroll.js"></script>
+</body>
+</html>
