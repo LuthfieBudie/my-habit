@@ -9,7 +9,6 @@ Build jadi .exe:   build_exe.bat
 import os
 import sys
 import socket
-import webview
 
 # folder docs/ (di .exe: folder sementara hasil ekstrak PyInstaller)
 FOLDER_ASET = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
@@ -39,17 +38,32 @@ def port_terpakai():
         return s.connect_ex(("127.0.0.1", PORT)) == 0
 
 
-if port_terpakai():
-    pesan("My Habit is already open.")
-    sys.exit(0)
+def jalankan():
+    import webview
 
-webview.settings["ALLOW_DOWNLOADS"] = True     # supaya tombol "Export backup" bisa menyimpan file
+    if port_terpakai():
+        pesan("My Habit is already open.")
+        return
 
-webview.create_window("My Habit", HALAMAN, width=1400, height=900, min_size=(380, 600))
-webview.start(
-    http_server=True,            # sajikan folder docs/ lewat http://127.0.0.1:PORT
-    http_port=PORT,
-    private_mode=False,          # data TIDAK dihapus saat aplikasi ditutup
-    storage_path=os.path.join(FOLDER_DATA, "webview"),
-    icon=os.path.join(FOLDER_ASET, "docs", "static", "icons", "icon-192.png"),
-)
+    webview.settings["ALLOW_DOWNLOADS"] = True     # supaya tombol "Export backup" bisa menyimpan file
+
+    webview.create_window("My Habit", HALAMAN, width=1400, height=900, min_size=(380, 600))
+    webview.start(
+        http_server=True,            # sajikan folder docs/ lewat http://127.0.0.1:PORT
+        http_port=PORT,
+        private_mode=False,          # data TIDAK dihapus saat aplikasi ditutup
+        storage_path=os.path.join(FOLDER_DATA, "webview"),
+    )
+
+
+if __name__ == "__main__":
+    try:
+        jalankan()
+    except Exception: 
+        # .exe tidak punya jendela terminal, jadi error ditulis ke file + ditampilkan di kotak pesan
+        import traceback
+        detail = traceback.format_exc()
+        file_log = os.path.join(FOLDER_DATA, "error.log")
+        with open(file_log, "w", encoding="utf-8") as f:
+            f.write(detail)
+        pesan("My Habit could not start.\n\n" + detail[-900:] + "\n\nSaved to: " + file_log)
