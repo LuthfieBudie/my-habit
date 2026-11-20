@@ -1,0 +1,8 @@
+{
+  "appId": "io.github.luthfiebudie.myhabit",
+  "appName": "My Habit",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#f0f1f3"
+  }
+}

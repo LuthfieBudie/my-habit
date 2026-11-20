@@ -8,12 +8,11 @@ A habit tracker that runs entirely on your device — no account, no server, no 
 
 ## Use it
 
-**Phone (Android & iPhone)** — open the web app and install it:
-`https://<your-username>.github.io/<repo-name>/checkin.html`
-- Android (Chrome): ⋮ → *Install app*
-- iPhone (Safari): Share → *Add to Home Screen*
+**Android** — download `My-Habit.apk` from the [Releases](../../releases) page and install it
+(allow *Install unknown apps* for your browser / file manager when asked).
 
 **Windows PC** — download `My Habit.exe` from the [Releases](../../releases) page and open it.
+(If Windows shows *"Windows protected your PC"*: **More info → Run anyway**.)
 
 > Phone and PC keep separate data. To copy data between devices: *Your data* (top-right on the dashboard) → **Export backup**, then **Import backup** on the other device.
 
@@ -24,6 +23,11 @@ build_exe.bat
 ```
 The app is created at `dist\My Habit.exe`.
 
+## Build the Android app
+
+GitHub Actions builds the APK automatically (tab **Actions → Build My Habit APK → Run workflow**, or push a `v*` tag).
+Locally (needs Node 22, JDK 21, Android SDK): `npm install`, `npm run build`, `npx cap add android`, then `cd android && gradlew assembleDebug`.
+
 ## Tech
 
-HTML, CSS, vanilla JavaScript, Service Worker (offline PWA), localStorage, Python + pywebview, PyInstaller.
+HTML, CSS, vanilla JavaScript, Service Worker (offline PWA), localStorage, Python + pywebview, PyInstaller, Capacitor (Android), GitHub Actions.

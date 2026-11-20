@@ -4,3 +4,7 @@ dist/
 *.spec
 *.keystore
 signing-key-info.txt
+node_modules/
+www/
+android/
+package-lock.json

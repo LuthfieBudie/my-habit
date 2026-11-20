@@ -1,0 +1,87 @@
+# =====================================================
+# GitHub membuat "My-Habit.apk" otomatis (Capacitor, tanpa Android Studio, tanpa GitHub Pages)
+#   - tombol "Run workflow" di tab Actions → APK bisa di-download dari halaman run
+#   - push tag (misalnya v1.0) → APK otomatis dilampirkan ke halaman Releases
+# Tanda tangan APK:
+#   - kalau secrets KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD sudah diisi → APK release
+#   - kalau belum → APK debug (bisa diinstal, tapi update berikutnya harus uninstall dulu)
+# =====================================================
+name: Build My Habit APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Siapkan proyek Android
+        run: |
+          npm install
+          npm run build
+          npx cap add android
+          pip install pillow
+          python tools/android_icons.py
+          npx cap sync android
+
+      - name: Nomor versi
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then NAMA="${GITHUB_REF_NAME#v}"; else NAMA="1.0.${{ github.run_number }}"; fi
+          sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$NAMA\"/" android/app/build.gradle
+          grep -E "versionCode|versionName" android/app/build.gradle
+
+      - name: Build APK
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          cd android
+          chmod +x gradlew
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/myhabit.keystore"
+            ./gradlew assembleRelease \
+              -Pandroid.injected.signing.store.file="$RUNNER_TEMP/myhabit.keystore" \
+              -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+              -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+              -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+            cp app/build/outputs/apk/release/app-release.apk ../My-Habit.apk
+          else
+            echo "::warning::Secrets keystore belum diisi, membuat APK debug"
+            ./gradlew assembleDebug
+            cp app/build/outputs/apk/debug/app-debug.apk ../My-Habit.apk
+          fi
+
+      - name: Upload APK (download dari halaman run ini)
+        uses: actions/upload-artifact@v4
+        with:
+          name: My-Habit-Android
+          path: My-Habit.apk
+
+      - name: Lampirkan ke Release (kalau dari tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: My-Habit.apk

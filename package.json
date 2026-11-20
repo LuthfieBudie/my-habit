@@ -1,0 +1,19 @@
+{
+  "name": "my-habit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "My Habit - aplikasi Android (Capacitor) dari folder docs",
+  "scripts": {
+    "build": "node build-www.js",
+    "android": "node build-www.js && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/filesystem": "^8.0.0",
+    "@capacitor/share": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0"
+  }
+}
