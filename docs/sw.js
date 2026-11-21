@@ -3,7 +3,7 @@
 // semua file aplikasi disimpan di perangkat → My Habit tetap jalan tanpa internet.
 // data habit TIDAK di sini (data ada di localStorage, diurus localapi.js)
 // =====================================================
-const VERSI = "my-habit-local-v3";     // naikkan setiap kali file aplikasi diubah
+const VERSI = "my-habit-local-v4";     // naikkan setiap kali file aplikasi diubah
 const FILE_APLIKASI = [
     "./",
     "index.html",

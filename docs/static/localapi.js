@@ -1,16 +1,8 @@
-// =====================================================
-// LOCALAPI.JS — "server" My Habit yang berjalan DI DALAM perangkat
-// semua fetch("/api/...") dari script.js & checkin.js dijawab dari sini,
-// datanya disimpan di penyimpanan browser (localStorage) perangkat itu sendiri.
-// tidak butuh internet, laptop, ngrok, atau login.
-// aturannya sama persis dengan app.py di versi pribadi.
-// =====================================================
 (function () {
     const KUNCI = "myhabit_local_v1";
     const JADWAL_VALID = ["everyday", "weekday", "once", "per_week", "range"];
     const PRIORITAS_VALID = ["crucial", "important", "normal"];
 
-    // ---------- penyimpanan ----------
     function dbKosong() {
         return { seq: { habit: 0, todo: 0, note: 0, project: 0 }, habits: [], todos: [], notes: [], projects: [] };
     }
@@ -19,7 +11,7 @@
         try {
             const db = JSON.parse(localStorage.getItem(KUNCI));
             if (db && Array.isArray(db.habits)) return db;
-        } catch (err) { /* data rusak → mulai kosong */ }
+        } catch (err) {}
         return dbKosong();
     }
 
@@ -29,7 +21,6 @@
 
     const idBaru = (db, jenis) => ++db.seq[jenis];
 
-    // ---------- tanggal & jam (jam perangkat) ----------
     const dua = (n) => String(n).padStart(2, "0");
     const keKey = (d) => `${d.getFullYear()}-${dua(d.getMonth() + 1)}-${dua(d.getDate())}`;
     const hariIni = () => keKey(new Date());
@@ -46,7 +37,6 @@
         return t.getFullYear() === y && t.getMonth() === m - 1 && t.getDate() === d;
     }
 
-    // error dengan kode HTTP, supaya script.js menerima jawaban yang sama seperti dari Flask
     class Gagal extends Error {
         constructor(status, pesan) {
             super(pesan);
@@ -54,7 +44,6 @@
         }
     }
 
-    // ---------- periksa data habit / to-do (sama dengan baca_item di app.py) ----------
     function bacaItem(body) {
         const name = String(body.name ?? "").trim();
         if (!name) throw new Gagal(400, "Name is required");
@@ -94,7 +83,6 @@
         return { name, schedule_type: schedule, times_per_week: times, start_date: start, end_date: end, priority };
     }
 
-    // ---------- bentuk data yang dikirim ke halaman (sama dengan Flask) ----------
     function tampilHabit(h) {
         const checks = Object.keys(h.checks).sort();
         const check_times = {};
@@ -136,7 +124,6 @@
         return habit;
     }
 
-    // centang tegas + "perubahan terbaru menang" (sama dengan set_centang di app.py)
     function setCentang(habit, tanggal, selesai, waktu) {
         const ada = tanggal in habit.checks;
         const batal = habit.unchecks[tanggal];
@@ -155,15 +142,9 @@
         const kini = sekarang();
         if (typeof teks !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(teks)) return kini;
         const waktu = teks.slice(0, 19).padEnd(19, ":00").slice(0, 19);
-        return waktu > kini ? kini : waktu;      // tidak boleh dari masa depan
+        return waktu > kini ? kini : waktu;      
     }
 
-    // =====================================================
-    // SCHEDULE OTOMATIS KE ARSIP
-    //  - Once       : sudah dicentang → masuk arsip mulai HARI BERIKUTNYA setelah tanggalnya
-    //  - Date range : masuk arsip mulai hari berikutnya setelah tanggal terakhir
-    // (archived_at = hari berikutnya, jadi di hari jadwalnya habit itu tetap tampil)
-    // =====================================================
     function besoknya(tanggal) {
         const [y, m, d] = tanggal.split("-").map(Number);
         return keKey(new Date(y, m - 1, d + 1));
@@ -173,7 +154,7 @@
         const kini = hariIni();
         let berubah = false;
         db.habits.forEach((h) => {
-            if (h.archived_at || h.tetap_aktif) return;      // tetap_aktif = sudah di-Restore manual
+            if (h.archived_at || h.tetap_aktif) return;     
             let selesaiPada = null;
             if (h.schedule_type === "once" && Object.keys(h.checks).length > 0) {
                 selesaiPada = [h.start_date, ...Object.keys(h.checks)].filter(Boolean).sort().pop();
@@ -188,9 +169,6 @@
         return berubah;
     }
 
-    // =====================================================
-    // ROUTER: method + alamat → jawaban [status, data]
-    // =====================================================
     function tangani(method, jalur, query, body) {
         const db = bacaDB();
         if (arsipkanScheduleSelesai(db)) simpanDB(db);
@@ -200,7 +178,6 @@
             return [status, data];
         };
 
-        // ---------- HABIT ----------
         if (jalur === "/habits" && method === "GET") {
             return [200, urutkan(db.habits).map(tampilHabit)];
         }
@@ -225,7 +202,7 @@
             if (method === "PUT") {
                 const data = bacaItem(body);
                 const h = cari(db.habits, m[1], "Habit not found");
-                Object.assign(h, data, { tetap_aktif: false });   // jadwal diubah → aturan arsip otomatis berlaku lagi
+                Object.assign(h, data, { tetap_aktif: false });   
                 return selesai(200, tampilHabit(h));
             }
             if (method === "DELETE") {
@@ -243,7 +220,7 @@
             if (aksi === "archive") h.archived_at = hariIni();
             if (aksi === "restore") {
                 h.archived_at = null;
-                h.tetap_aktif = true;            // jangan diarsipkan otomatis lagi
+                h.tetap_aktif = true;            
             }
             if (aksi === "stop") h.stopped_at = h.stopped_at ? null : hariIni();
             if (aksi === "to-todo") {
@@ -276,7 +253,6 @@
             return selesai(200, tampilHabit(h));
         }
 
-        // ---------- TO-DO ----------
         if (jalur === "/todos" && method === "GET") {
             return [200, [...db.todos].sort((a, b) => a.id - b.id).map(tampilTodo)];
         }
@@ -304,13 +280,12 @@
                 start_date: t.start_date, end_date: t.end_date, priority: t.priority
             };
             let habit = t.habit_id ? db.habits.find((h) => h.id === t.habit_id) : null;
-            if (habit) Object.assign(habit, fields, { archived_at: null });   // aktifkan lagi habit lamanya
+            if (habit) Object.assign(habit, fields, { archived_at: null });  
             else habit = habitBaru(db, fields);
             db.todos = db.todos.filter((x) => x.id !== t.id);
             return selesai(201, tampilHabit(habit));
         }
 
-        // ---------- NOTES ----------
         if (jalur === "/notes" && method === "GET") {
             const start = query.get("start");
             const end = query.get("end");
@@ -334,7 +309,6 @@
             return selesai(200, { ok: true });
         }
 
-        // ---------- PROJECTS ----------
         const bacaProject = () => {
             const name = String(body.name ?? "").trim();
             if (!name) throw new Gagal(400, "Name is required");
@@ -380,9 +354,6 @@
         throw new Gagal(404, "Not found");
     }
 
-    // =====================================================
-    // SAMBUNGKAN KE fetch: alamat yang mengandung /api/ dijawab di sini, sisanya normal
-    // =====================================================
     const fetchAsli = window.fetch.bind(window);
 
     function jawabJSON(status, data) {
@@ -410,9 +381,6 @@
         }
     };
 
-    // =====================================================
-    // BACKUP: dipakai tombol Export / Import di dashboard (backup.js)
-    // =====================================================
     window.MyHabitData = {
         ekspor() {
             return { app: "my-habit", version: 1, exported_at: sekarang(), data: bacaDB() };
@@ -424,7 +392,6 @@
                 throw new Error("This file isn't a My Habit backup.");
             }
             simpanDB(data);
-            // salinan & antrean halaman Check-in dibuang supaya tidak tercampur data lama
             localStorage.removeItem("mh_habits");
             localStorage.removeItem("mh_queue");
         }

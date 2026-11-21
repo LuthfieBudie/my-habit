@@ -1,8 +1,3 @@
-// =====================================================
-// 1. LINE CHART (SVG, tanpa library)
-// =====================================================
-// data = { labels: [...], values: [...], unit: "%", min, max }
-// nilai null = belum terjadi (label tetap tampil, titiknya tidak digambar)
 function drawLineChart(container, data, color) {
     container.chartData = data;
     container.chartColor = color;
@@ -35,7 +30,6 @@ function renderChart(container) {
     const range = max - min || 1;
     const n = data.labels.length;
 
-    // posisi semua slot (termasuk yang null)
     const semua = data.labels.map((label, i) => ({
         x: n === 1 ? pad.left + w / 2 : pad.left + (i / (n - 1)) * w,
         y: data.values[i] === null ? null : pad.top + h - ((data.values[i] - min) / range) * h * 0.85 - h * 0.075,
@@ -68,11 +62,10 @@ function renderChart(container) {
         svg.appendChild(grid);
     }
 
-    // label sumbu X untuk SEMUA slot
     const step = Math.ceil(n / Math.max(1, Math.floor(w / 34)));
     semua.forEach((p, i) => {
         if (i % step !== 0 && i !== n - 1) return;
-        if (i !== n - 1 && n - 1 - i < step) return;   // terlalu dekat label terakhir
+        if (i !== n - 1 && n - 1 - i < step) return;  
         const t = document.createElementNS(svgNS, "text");
         t.setAttribute("x", p.x);
         t.setAttribute("y", height - 4);
@@ -86,7 +79,7 @@ function renderChart(container) {
     });
 
     container.appendChild(svg);
-    if (points.length === 0) return;   // belum ada data sama sekali
+    if (points.length === 0) return;  
 
     const linePath = smoothPath(points);
     const first = points[0];
@@ -180,9 +173,6 @@ function smoothPath(points) {
     return d;
 }
 
-// =====================================================
-// 2. AMBIL ELEMEN
-// =====================================================
 const $ = (id) => document.getElementById(id);
 
 const habitCard   = $("habitCard");
@@ -290,9 +280,6 @@ const topList      = $("topList");
 const leastList    = $("leastList");
 const analysisBody = $("analysisBody");
 
-// =====================================================
-// 3. DATA TANGGAL
-// =====================================================
 const namaHari        = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const namaHariSingkat = ["S", "M", "T", "W", "T", "F", "S"];
 const namaHariPendek  = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -311,13 +298,11 @@ function tambahHari(d, jumlah) {
     return hasil;
 }
 
-// Senin dari minggu tanggal d (Senin = awal minggu)
 function seninDari(d) {
-    const urutan = (d.getDay() + 6) % 7;   // Senin=0, Selasa=1, ..., Minggu=6
+    const urutan = (d.getDay() + 6) % 7;   
     return tambahHari(d, -urutan);
 }
 
-// minggu keberapa tanggal d di bulannya (0 = Week 1), minggu dimulai hari Senin
 function mingguKe(d) {
     const tglSatu = new Date(d.getFullYear(), d.getMonth(), 1);
     const geser = (tglSatu.getDay() + 6) % 7;
@@ -353,36 +338,53 @@ function formatTanggal(key) {
     return `${d} ${namaBulanPendek[m - 1]}`;
 }
 
-// teks "2026-11-14" → objek Date
 function dariKey(key) {
     const [y, m, d] = key.split("-").map(Number);
     return new Date(y, m - 1, d);
 }
 
-// selisih hari dari tanggal a ke tanggal b (b - a). Contoh: 14 Nov → 17 Nov = 3
 function selisihHari(a, b) {
-    return Math.round((b - a) / 86400000);   // 86400000 ms = 1 hari
+    return Math.round((b - a) / 86400000);  
 }
 
-// =====================================================
-// 4. DATA DARI MYSQL
-// =====================================================
-let habits = [];   // semua habit (aktif + arsip)
+
+
+
+
+
+
+
+
+let habits = [];  
 let todos = [];
 let projects = [];
 
-// Schedule = habit yang "Once" atau "Date range", sisanya masuk Habit Tracker
+
+
+
+
+
+
+
 function isSchedule(habit) {
     return habit.schedule_type === "once" || habit.schedule_type === "range";
 }
 
-// habit yang tampil di tracker: yang belum diarsipkan (di bulan mana pun)
+
+
+
+
+
 function habitTracker() {
     return habits.filter((h) => !h.archived_at);
 }
 
-// arsip = habit yang diarsipkan DI bulan yang dilihat
-// (kecuali yang sedang dipindah ke To-do)
+
+
+
+
+
+
 function habitArsip() {
     const awalBulan = toKey(dates[0]);
     const akhirBulan = toKey(dates[dates.length - 1]);
@@ -396,37 +398,45 @@ function habitArsip() {
     );
 }
 
-// =====================================================
-// 5. JADWAL
-// =====================================================
 
-// apakah habit sudah dimulai, belum diarsipkan, dan belum dihentikan di tanggal d?
+
+
+
+
+
+
+
 function isAktif(habit, d) {
     const key = toKey(d);
-    if (habit.start_date && key < habit.start_date) return false;     // belum mulai
-    if (habit.archived_at && key >= habit.archived_at) return false;  // sudah diarsipkan
-    if (habit.stopped_at && key > habit.stopped_at) return false;     // sudah dihentikan
+    if (habit.start_date && key < habit.start_date) return false;  
+    if (habit.archived_at && key >= habit.archived_at) return false; 
+    if (habit.stopped_at && key > habit.stopped_at) return false;     
     return true;
 }
 
-// apakah habit dijadwalkan di tanggal d? (menentukan checkbox aktif / abu-abu)
+
+
+
+
 function isTerjadwal(habit, d) {
     if (!isAktif(habit, d)) return false;
     const key = toKey(d);
 
     switch (habit.schedule_type) {
         case "weekday":
-            return d.getDay() >= 1 && d.getDay() <= 5;   // Senin - Jumat
+            return d.getDay() >= 1 && d.getDay() <= 5;  
         case "range":
             return key >= habit.start_date && key <= habit.end_date;
         case "once":
-            return key === habit.start_date;            // hanya satu tanggal
+            return key === habit.start_date;        
         default:
-            return true;   // everyday & per_week: semua hari bisa dicentang
+            return true;  
     }
 }
 
-// jumlah centang di minggu (Senin - Minggu) tempat tanggal d berada
+
+
+
 function centangSeminggu(habit, d) {
     const senin = seninDari(d);
     const awalKey = toKey(senin);
@@ -434,7 +444,12 @@ function centangSeminggu(habit, d) {
     return habit.checks.filter((key) => key >= awalKey && key <= akhirKey).length;
 }
 
-// teks singkat jadwal, misal "Weekday (from 14 Nov)" atau "3x / week"
+
+
+
+
+
+
 function teksJadwal(item) {
     if (item.schedule_type === "once") {
         return `Once (${formatTanggal(item.start_date)})`;
@@ -456,11 +471,10 @@ function buatTitikPrioritas(priority) {
     return dot;
 }
 
-// =====================================================
-// 6. PERHITUNGAN STATISTIK
-// =====================================================
 
-// target & jumlah selesai SATU habit dari tanggal awal sampai akhir
+
+
+
 function hitungHabit(habit, awal, akhir) {
     if (habit.schedule_type === "per_week") return hitungPerMinggu(habit, awal, akhir);
 
@@ -476,11 +490,13 @@ function hitungHabit(habit, awal, akhir) {
     return { target, selesai };
 }
 
-// habit "X kali per minggu": dihitung per minggu (Senin - Minggu)
-// sudah X kali di minggu itu = 100%, walaupun periodenya cuma sebagian minggu
+
+
+
+
 function hitungPerMinggu(habit, awal, akhir) {
     const x = habit.times_per_week;
-    const hariPerMinggu = {};   // { "senin minggu itu": jumlah hari aktif di periode }
+    const hariPerMinggu = {};   
 
     for (let d = new Date(awal); d <= akhir; d = tambahHari(d, 1)) {
         if (!isAktif(habit, d)) continue;
@@ -493,7 +509,7 @@ function hitungPerMinggu(habit, awal, akhir) {
 
     Object.entries(hariPerMinggu).forEach(([kunciSenin, hari]) => {
         const sudah = Math.min(centangSeminggu(habit, dariKey(kunciSenin)), x);
-        const porsi = hari / 7;          // bagian minggu yang masuk periode
+        const porsi = hari / 7;         
         target += x * porsi;
         selesai += sudah * porsi;
     });
@@ -501,7 +517,6 @@ function hitungPerMinggu(habit, awal, akhir) {
     return { target, selesai };
 }
 
-// persentase SEMUA habit dari awal sampai akhir (hari setelah hari ini tidak dihitung)
 function hitungPeriode(awal, akhir) {
     const batasAkhir = akhir > hariIni ? hariIni : akhir;
     let target = 0;
@@ -537,7 +552,10 @@ function updateStats() {
     renderCalendar();
 }
 
-// ---------- MONTHLY: Jan - Des tahun yang dilihat ----------
+
+
+
+
 function updateMonthly() {
     const values = [];
 
@@ -556,9 +574,12 @@ function updateMonthly() {
     drawLineChart(monthlyChart, { labels: namaBulanPendek, values, unit: "%", min: 0, max: 100 }, "#7b1cff");
 }
 
-// ---------- WEEKLY: total tiap minggu (Week 1 - 5) di bulan yang dilihat ----------
+
+
+
+
 function daftarMinggu() {
-    const minggu = [];   // [{ awal, akhir }, ...]
+    const minggu = [];  
     dates.forEach((d) => {
         const i = mingguKe(d);
         if (!minggu[i]) minggu[i] = { awal: d, akhir: d };
@@ -572,11 +593,9 @@ function updateWeekly() {
     const labels = minggu.map((_, i) => "W" + (i + 1));
     const values = minggu.map((m) => (m.awal > hariIni ? null : hitungPeriode(m.awal, m.akhir).persen));
 
-    // minggu yang dibandingkan: minggu ini (kalau bulan berjalan) atau minggu terakhir
     const idx = sedangLihatBulanIni() ? mingguKe(hariIni) : minggu.length - 1;
     const sekarang = values[idx] ?? 0;
 
-    // dibanding minggu sebelumnya (kalau Week 1 → 7 hari sebelum tanggal 1)
     const sebelumnya = idx > 0
         ? values[idx - 1]
         : hitungPeriode(tambahHari(minggu[0].awal, -7), tambahHari(minggu[0].awal, -1)).persen;
@@ -588,9 +607,12 @@ function updateWeekly() {
     drawLineChart(weeklyChart, { labels, values, unit: "%", min: 0, max: 100 }, "#7b1cff");
 }
 
-// ---------- DAILY: Senin - Minggu (KUMULATIF) ----------
-// bulan berjalan  → minggu ini, patokannya hari ini
-// bulan lain      → minggu terakhir bulan itu, patokannya tanggal terakhir
+
+
+
+
+
+
 function hariAcuan() {
     return sedangLihatBulanIni() ? hariIni : dates[dates.length - 1];
 }
@@ -618,8 +640,12 @@ function updateDaily() {
     drawLineChart(dailyChart, { labels, values, unit: "%", min: 0, max: 100 }, "#7b1cff");
 }
 
-// ---------- OVERALL: jumlah semua baris di tabel Analysis ----------
-// hanya habit yang tampil (bukan arsip), dan hanya sampai hari ini
+
+
+
+
+
+
 function updateOverall() {
     let target = 0;
     let selesai = 0;
@@ -637,9 +663,11 @@ function updateOverall() {
     overallMissed.textContent = Math.max(Math.round(target - selesai), 0);
 }
 
-// ---------- hasil satu habit di bulan yang dilihat (untuk Top/Least, Analysis & Overall) ----------
-// goal       = target satu bulan penuh
-// sampaiKini = target dari tanggal 1 sampai HARI INI saja (hari ke depan belum dihitung)
+
+
+
+
+
 function hasilBulanIni(habit) {
     const awal = dates[0];
     const akhir = dates[dates.length - 1];
@@ -652,7 +680,6 @@ function hasilBulanIni(habit) {
     return { goal, sampaiKini: kini.target, selesai: kini.selesai, persen };
 }
 
-// ---------- TOP & LEAST ----------
 function isiDaftar(listEl, daftarHabit) {
     listEl.innerHTML = "";
 
@@ -681,7 +708,6 @@ function isiDaftar(listEl, daftarHabit) {
 }
 
 function updateTopLeast() {
-    // Schedule (Once / Date range) tidak ikut peringkat, hanya habit rutin
     const urut = habitTracker()
         .filter((h) => !isSchedule(h))
         .sort((a, b) => hasilBulanIni(b).persen - hasilBulanIni(a).persen);
@@ -689,7 +715,10 @@ function updateTopLeast() {
     isiDaftar(leastList, urut.slice(-3).reverse());
 }
 
-// ---------- ANALYSIS ----------
+
+
+
+
 function updateAnalysis() {
     analysisBody.innerHTML = "";
     const daftar = habitTracker();
@@ -709,13 +738,11 @@ function updateAnalysis() {
         const hasil = hasilBulanIni(habit);
         const goal = Math.round(hasil.goal);
         const done = Math.round(hasil.selesai);
-        // Left = yang terlewat sampai hari ini (hari ke depan tidak dihitung)
         const left = Math.max(Math.round(hasil.sampaiKini) - done, 0);
 
         const tr = document.createElement("tr");
         const isiKolom = [habit.name, goal, done, left, hasil.persen + "%"];
 
-        // baris bisa di-drag ke atas / bawah (urutannya sama dengan urutan di tracker)
         tr.draggable = true;
         pasangDrag(tr, { type: "analysis", id: habit.id });
         pasangUrut(
@@ -736,9 +763,11 @@ function updateAnalysis() {
     });
 }
 
-// ---------- COMPARE: 2 habit berdampingan ----------
 
-// persen satu habit dari awal sampai akhir (null = belum ada jadwal)
+
+
+
+
 function persenHabit(habit, awal, akhir) {
     const batas = akhir > hariIni ? hariIni : akhir;
     if (batas < awal) return null;
@@ -746,8 +775,11 @@ function persenHabit(habit, awal, akhir) {
     return hasil.target === 0 ? null : Math.round((hasil.selesai / hasil.target) * 100);
 }
 
-// isi dropdown kedua slot: habit (kecuali yang sedang jadi to-do) + semua to-do
-// nilai option: "h:5" = habit id 5, "t:3" = to-do id 3
+
+
+
+
+
 function isiPilihanCompare() {
     const diTodo = new Set(todos.map((t) => t.habit_id));
 
@@ -766,8 +798,11 @@ function isiPilihanCompare() {
     });
 }
 
-// ubah pilihan "h:5" / "t:3" jadi { nama, habit }
-// to-do yang dulunya habit → pakai riwayat habit lamanya, kalau tidak → habit = null
+
+
+
+
+
 function isiSlot(pilih) {
     if (!pilih) return null;
 
@@ -798,7 +833,6 @@ function renderCompare() {
         slot.el.classList.toggle("empty", !isi);
         slot.el.classList.toggle("nodata", !!isi && !isi.habit);
 
-        // kosong, atau to-do yang belum punya riwayat centang
         if (!isi || !isi.habit) {
             slot.chart.innerHTML = "";
             slot.chart.chartData = null;
@@ -827,10 +861,9 @@ compareSlots.forEach((slot) => {
     });
 });
 
-// =====================================================
-// 7. TABEL TRACKER & SCHEDULE
-// =====================================================
-// header yang sama dipakai Habit Tracker & Schedule
+
+
+
 function buildHeader() {
     buatHeader(trackerHead);
     buatHeader(scheduleHead);
@@ -876,7 +909,6 @@ function buatHeader(thead) {
     thead.append(weekRow, dateRow, dayRow);
 }
 
-// class hari ini / awal minggu (Senin atau tgl 1) / akhir pekan
 function aturKelasSel(sel, d) {
     if (isHariIni(d)) sel.classList.add("today");
     if (d.getDay() === 1 || d.getDate() === 1) sel.classList.add("week-start");
@@ -892,7 +924,6 @@ function renderHabits() {
     updateStats();
 }
 
-// di layar kecil tabel bisa digeser: langsung geser supaya kolom hari ini terlihat
 function geserKeHariIni() {
     document.querySelectorAll(".tracker-wrap").forEach((wrap) => {
         const kolomHariIni = wrap.querySelector("thead th.today");
@@ -924,8 +955,6 @@ function createHabitRow(habit) {
     if (habit.stopped_at) tr.classList.add("stopped");
     pasangUrutBaris(tr, habit);
 
-    // kolom nama: titik prioritas + nama (klik = edit) + tombol stop + tombol arsip
-    // kolom ini juga "pegangan" untuk drag (urutan, To-do, Arsip, Compare)
     const nameTd = document.createElement("td");
     nameTd.className = "habit-col";
     nameTd.draggable = true;
@@ -947,7 +976,6 @@ function createHabitRow(habit) {
     archiveBtn.title = "Archive";
     archiveBtn.addEventListener("click", () => archiveHabit(habit.id));
 
-    // tombol stop: kunci hari-hari setelah hari ini (klik lagi = lanjutkan)
     const stopBtn = document.createElement("button");
     stopBtn.className = "stop-btn";
     stopBtn.title = habit.stopped_at ? "Resume this habit" : "Stop from tomorrow";
@@ -965,10 +993,8 @@ function createHabitRow(habit) {
 
         const key = toKey(d);
         checkbox.checked = habit.checks.includes(key);
-        // hari yang belum terjadi ATAU di luar jadwal → abu-abu, tidak bisa dicentang
         checkbox.disabled = d > hariIni || !isTerjadwal(habit, d);
 
-        // "X kali per minggu": target minggu ini tercapai → kotak kosong lain dikunci
         const penuh = habit.schedule_type === "per_week" && !checkbox.checked
             && centangSeminggu(habit, d) >= habit.times_per_week;
         if (penuh && !checkbox.disabled) {
@@ -987,13 +1013,19 @@ function createHabitRow(habit) {
     return tr;
 }
 
-// ikon kecil untuk tombol stop / lanjutkan
+
+
+
+
 const IKON_STOP = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none"/></svg>`;
 const IKON_PLAY = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z" fill="currentColor" stroke="none"/></svg>`;
 
-// =====================================================
-// 8. TO-DO & ARSIP
-// =====================================================
+
+
+
+
+
+
 function buatItemList(item, tombol) {
     const li = document.createElement("li");
 
@@ -1054,21 +1086,23 @@ function renderArchive() {
             ["Delete", () => deleteHabit(habit.id)]
         ]);
         li.draggable = true;
-        pasangDrag(li, { type: "arsip", id: habit.id });   // bisa di-drag ke Tracker / Compare
+        pasangDrag(li, { type: "arsip", id: habit.id });  
         archiveList.appendChild(li);
     });
 }
 
-// =====================================================
-// 9. DRAG & DROP
-// =====================================================
-let sedangDrag = null;   // { type: "todo" | "habit" | "arsip" | "project" | "analysis", id }
+
+
+
+
+
+let sedangDrag = null;   
 
 function pasangDrag(el, info) {
     el.addEventListener("dragstart", (e) => {
         sedangDrag = info;
         e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", info.type);   // wajib untuk Firefox
+        e.dataTransfer.setData("text/plain", info.type);  
         el.classList.add("dragging");
     });
 
@@ -1080,15 +1114,14 @@ function pasangDrag(el, info) {
     });
 }
 
-// el (baris habit / item project / baris analysis) bisa jadi tujuan drag → untuk mengubah urutan
-// bolehDrop() = apakah yang sedang di-drag boleh ditaruh di sini
-// saatDrop(diAtas) = dipanggil saat dilepas (diAtas = true kalau ditaruh di atas el)
+
+
+
 function pasangUrut(el, bolehDrop, saatDrop) {
     el.addEventListener("dragover", (e) => {
         if (!bolehDrop()) return;
         e.preventDefault();
 
-        // kursor di setengah atas → taruh di atas, setengah bawah → di bawah
         const kotak = el.getBoundingClientRect();
         const diAtas = e.clientY < kotak.top + kotak.height / 2;
         el.classList.toggle("drop-before", diAtas);
@@ -1108,7 +1141,9 @@ function pasangUrut(el, bolehDrop, saatDrop) {
     });
 }
 
-// baris habit: hanya menerima habit lain dari tabel yang SAMA (Habit Tracker atau Schedule)
+
+
+
 function pasangUrutBaris(tr, habit) {
     pasangUrut(
         tr,
@@ -1121,14 +1156,16 @@ function pasangUrutBaris(tr, habit) {
     );
 }
 
-// zone hanya menerima jenis tertentu (satu jenis atau daftar jenis)
+
+
+
 function pasangDropZone(zone, terimaJenis, saatDrop) {
-    const jenis = [].concat(terimaJenis);   // "habit" → ["habit"]
+    const jenis = [].concat(terimaJenis);   
     const cocok = () => sedangDrag && jenis.includes(sedangDrag.type);
 
     zone.addEventListener("dragover", (e) => {
         if (!cocok()) return;
-        e.preventDefault();   // tanpa ini, drop tidak diizinkan
+        e.preventDefault();   
         zone.classList.add("drop-active");
     });
 
@@ -1139,12 +1176,10 @@ function pasangDropZone(zone, terimaJenis, saatDrop) {
     zone.addEventListener("drop", (e) => {
         e.preventDefault();
         zone.classList.remove("drop-active");
-        if (cocok()) saatDrop(sedangDrag.id, sedangDrag.type);   // kirim id + jenisnya
+        if (cocok()) saatDrop(sedangDrag.id, sedangDrag.type);  
     });
 }
 
-// Habit Tracker / Schedule ← to-do (jadi habit) atau item arsip (dipulihkan)
-// habit-nya otomatis masuk tabel yang sesuai jadwalnya
 [habitCard, scheduleCard].forEach((card) => {
     pasangDropZone(card, ["todo", "arsip"], (id, jenis) => {
         if (jenis === "todo") convertTodo(id);
@@ -1152,10 +1187,9 @@ function pasangDropZone(zone, terimaJenis, saatDrop) {
     });
 });
 
-pasangDropZone(todoCard, "habit", habitKeTodo);      // habit  → To-do
-pasangDropZone(archiveCard, "habit", archiveHabit);  // habit  → Arsip
+pasangDropZone(todoCard, "habit", habitKeTodo);      
+pasangDropZone(archiveCard, "habit", archiveHabit);  
 
-// habit / item arsip / to-do → slot Compare
 compareSlots.forEach((slot) => {
     pasangDropZone(slot.el, ["habit", "arsip", "todo"], (id, jenis) => {
         slot.pilih = (jenis === "todo" ? "t:" : "h:") + id;
@@ -1163,10 +1197,10 @@ compareSlots.forEach((slot) => {
     });
 });
 
-// =====================================================
-// 10. MODAL HABIT / TO-DO (tambah & edit)
-// =====================================================
-let modeModal = { type: "habit", id: null };   // id null = tambah baru
+
+
+
+let modeModal = { type: "habit", id: null };  
 
 function pilihRadio(nama, nilai) {
     document.querySelector(`input[name="${nama}"][value="${nilai}"]`).checked = true;
@@ -1176,7 +1210,8 @@ function nilaiRadio(nama) {
     return document.querySelector(`input[name="${nama}"]:checked`).value;
 }
 
-// tampilkan / sembunyikan bagian form sesuai pilihan
+
+
 function aturTampilanJadwal() {
     const custom = nilaiRadio("schedule") === "custom";
     const sekali = nilaiRadio("schedule") === "once";
@@ -1189,7 +1224,6 @@ function aturTampilanJadwal() {
     perWeekField.classList.toggle("show", custom && mode === "per_week");
     rangeField.classList.toggle("show", pakaiRentang);
 
-    // "Start from" tidak perlu kalau pakai rentang tanggal atau sekali saja
     startBox.style.display = pakaiRentang || sekali ? "none" : "";
     startFrom.classList.toggle("show", nilaiRadio("startMode") === "pick");
 }
@@ -1198,14 +1232,16 @@ document.querySelectorAll('input[name="schedule"], input[name="customMode"], inp
     radio.addEventListener("change", aturTampilanJadwal);
 });
 
-// jadwalAwal: jadwal yang dipilih otomatis untuk item baru (tombol + di Schedule → "once")
+
+
 function openItemModal(type, item = null, jadwalAwal = "everyday") {
     modeModal = { type, id: item ? item.id : null };
 
     const jenis = type === "habit" ? "Habit" : "To-do";
     itemModalTitle.textContent = item ? `Edit ${jenis}` : `New ${jenis}`;
 
-    // isi form (kosong kalau tambah baru)
+
+
     itemName.value = item ? item.name : "";
     const jadwal = item ? item.schedule_type : jadwalAwal;
     pilihRadio("schedule", jadwal === "per_week" || jadwal === "range" ? "custom" : jadwal);
@@ -1214,13 +1250,15 @@ function openItemModal(type, item = null, jadwalAwal = "everyday") {
     startDate.value = item && item.start_date ? item.start_date : toKey(hariIni);
     endDate.value = item && item.end_date ? item.end_date : toKey(tambahHari(hariIni, 7));
 
-    // Start from: item baru → "Today", edit → tanggal yang tersimpan (kosong = tanpa batas awal)
+
+
     pilihRadio("startMode", item ? "pick" : "now");
     startFrom.value = item && item.start_date && jadwal !== "range" && jadwal !== "once" ? item.start_date : "";
     onceDate.value = item && jadwal === "once" ? item.start_date : toKey(hariIni);
     pilihRadio("priority", item ? item.priority : "normal");
 
-    // tombol merah: Archive (edit habit) atau Delete (edit to-do)
+
+
     itemDangerBtn.style.display = item ? "" : "none";
     itemDangerBtn.textContent = type === "habit" ? "Archive" : "Delete";
 
@@ -1234,7 +1272,6 @@ function closeItemModal() {
     itemModal.classList.remove("show");
 }
 
-// baca isi form jadi data yang dikirim ke Flask
 function bacaForm() {
     let schedule = nilaiRadio("schedule");
     if (schedule === "custom") schedule = nilaiRadio("customMode");
@@ -1243,7 +1280,7 @@ function bacaForm() {
     if (schedule === "once") mulai = onceDate.value;
     else if (schedule === "range") mulai = startDate.value;
     else if (nilaiRadio("startMode") === "now") mulai = toKey(hariIni);
-    else mulai = startFrom.value || null;   // kosong = tanpa batas awal
+    else mulai = startFrom.value || null;   
 
     return {
         name: itemName.value.trim(),
@@ -1279,8 +1316,8 @@ itemForm.addEventListener("submit", async (e) => {
 
         const daftar = type === "habit" ? habits : todos;
         const posisi = daftar.findIndex((x) => x.id === hasil.id);
-        if (posisi >= 0) daftar[posisi] = hasil;   // edit → ganti yang lama
-        else daftar.push(hasil);                    // baru → tambahkan
+        if (posisi >= 0) daftar[posisi] = hasil;  
+        else daftar.push(hasil);               
 
         type === "habit" ? renderHabits() : renderTodos();
         closeItemModal();
@@ -1305,9 +1342,6 @@ itemModal.addEventListener("click", (e) => {
     if (e.target === itemModal) closeItemModal();
 });
 
-// =====================================================
-// 11. MODAL PILIH BULAN
-// =====================================================
 for (let m = 0; m < 12; m++) {
     const option = document.createElement("option");
     option.value = m;
@@ -1369,7 +1403,7 @@ function gantiBulan(tahun, bulan) {
     });
 
     aturTombolBulan();
-    tanggalDipilih = hariAcuan();   // tanggal untuk Notes ikut pindah bulan
+    tanggalDipilih = hariAcuan();   
     buildHeader();
     renderHabits();
     geserKeHariIni();
@@ -1385,8 +1419,6 @@ function aturTombolBulan() {
     $("nextMonthLabel").textContent = format(sesudah);
 }
 
-// geser bulan: -1 = mundur, +1 = maju
-// new Date(2026, -1, 1) otomatis jadi Desember 2025, jadi pergantian tahun beres sendiri
 function geserBulan(langkah) {
     const d = new Date(viewYear, viewMonth + langkah, 1);
     gantiBulan(d.getFullYear(), d.getMonth());
@@ -1395,9 +1427,6 @@ function geserBulan(langkah) {
 $("prevMonthBtn").addEventListener("click", () => geserBulan(-1));
 $("nextMonthBtn").addEventListener("click", () => geserBulan(1));
 
-// =====================================================
-// 12. KOMUNIKASI DENGAN FLASK
-// =====================================================
 async function kirim(url, method = "POST", body = null) {
     const res = await fetch(url, {
         method,
@@ -1433,7 +1462,7 @@ async function loadData() {
 async function toggleCheck(habit, key, checkbox) {
     try {
         gantiHabit(await kirim(`/api/habits/${habit.id}/toggle`, "POST", { date: key }));
-        renderHabits();   // gambar ulang supaya kotak yang terkunci ikut diperbarui
+        renderHabits();  
     } catch (err) {
         checkbox.checked = !checkbox.checked;
         alert("Failed to save the check");
@@ -1498,12 +1527,11 @@ async function habitKeTodo(id) {
     }
 }
 
-// pindahkan habit dragId ke atas / bawah habit targetId, lalu simpan urutannya
 async function pindahUrutan(dragId, targetId, diAtas) {
     const urutan = habitTracker().map((h) => h.id).filter((id) => id !== dragId);
     let posisi = urutan.indexOf(targetId);
     if (!diAtas) posisi++;
-    urutan.splice(posisi, 0, dragId);   // sisipkan di posisi baru
+    urutan.splice(posisi, 0, dragId);  
 
     urutan.forEach((id, i) => {
         habits.find((h) => h.id === id).sort_order = i + 1;
@@ -1518,7 +1546,6 @@ async function pindahUrutan(dragId, targetId, diAtas) {
     }
 }
 
-// hapus PERMANEN habit dari arsip (riwayat centangnya ikut hilang)
 async function deleteHabit(id) {
     const habit = habits.find((h) => h.id === id);
     if (!confirm(`Delete "${habit.name}" permanently? All of its history will be removed.`)) return;
@@ -1547,9 +1574,6 @@ async function deleteTodo(id) {
     }
 }
 
-// =====================================================
-// 13. NOTIFIKASI: habit hari ini yang belum dicentang
-// =====================================================
 const urutanPrioritas = { crucial: 0, important: 1, normal: 2 };
 
 function habitBelumHariIni() {
@@ -1557,7 +1581,6 @@ function habitBelumHariIni() {
 
     return habits
         .filter((h) => !h.archived_at && isTerjadwal(h, hariIni) && !h.checks.includes(key))
-        // "X kali per minggu" yang targetnya sudah tercapai tidak perlu diingatkan
         .filter((h) => !(h.schedule_type === "per_week" && centangSeminggu(h, hariIni) >= h.times_per_week))
         .sort((a, b) => urutanPrioritas[a.priority] - urutanPrioritas[b.priority]);
 }
@@ -1590,32 +1613,22 @@ function renderNotif() {
 }
 
 notifBtn.addEventListener("click", (e) => {
-    e.stopPropagation();                    // jangan langsung ditutup oleh klik dokumen
+    e.stopPropagation();                 
     notifPanel.classList.toggle("show");
 });
 
 notifPanel.addEventListener("click", (e) => e.stopPropagation());
 document.addEventListener("click", () => notifPanel.classList.remove("show"));
 
-// =====================================================
-// 14. CALENDAR
-// =====================================================
 let tanggalDipilih = hariIni;
-let filterKalender = "all";   // "all" | "crucial" | "important" | "routine"
+let filterKalender = "all";   
 
-// apakah habit dihitung di kalender pada tanggal d?
-// "X kali per minggu" yang target minggunya sudah tercapai → hari kosong lainnya tidak dihitung
 function adaDiKalender(habit, d) {
     if (!isTerjadwal(habit, d)) return false;
     if (habit.schedule_type !== "per_week") return true;
     return habit.checks.includes(toKey(d)) || centangSeminggu(habit, d) < habit.times_per_week;
 }
 
-// tentukan warna satu tanggal + alasannya (untuk tooltip)
-// merah  = ada habit Critical (tetap merah walau sudah dicentang) atau deadline project
-// oren   = ada habit Important yang BELUM dicentang, atau deadline project ≤ 3 hari lagi
-// hijau  = sisanya, makin pekat makin banyak yang dicentang (hanya hari yang sudah lewat / hari ini)
-// putih  = tidak ada apa-apa
 function infoHari(d) {
     const key = toKey(d);
     const f = filterKalender;
@@ -1629,8 +1642,6 @@ function infoHari(d) {
         if (!adaDiKalender(habit, d)) return;
         const sudah = habit.checks.includes(key);
 
-        // merah / oren hanya dari habit yang MASIH AKTIF (bukan arsip).
-        // "X kali per minggu" tidak punya hari tetap → hanya ditandai di hari yang dicentang
         const tandai = !habit.archived_at && (habit.schedule_type !== "per_week" || sudah);
 
         if (tandai && habit.priority === "crucial" && (f === "all" || f === "crucial")) {
@@ -1642,7 +1653,6 @@ function infoHari(d) {
             alasan.push(`Important: ${habit.name}`);
         }
 
-        // hijau: "All" → semua habit, "Routine" → habit Routine saja
         if (f === "all" || (f === "routine" && habit.priority === "normal")) {
             target++;
             if (sudah) selesai++;
@@ -1650,7 +1660,7 @@ function infoHari(d) {
     });
 
     projects.filter((p) => !p.done).forEach((p) => {
-        const sisa = selisihHari(d, dariKey(p.deadline));   // berapa hari lagi dari tanggal d
+        const sisa = selisihHari(d, dariKey(p.deadline));  
         if (sisa === 0 && (f === "all" || f === "crucial")) {
             merah = true;
             alasan.push(`Deadline: ${p.name}`);
@@ -1665,7 +1675,6 @@ function infoHari(d) {
     else if (oren) kelas = "c-orange";
     else if (target > 0 && d <= hariIni) {
         const persen = Math.round((selesai / target) * 100);
-        // 0% → putih, 1-33% → g-1, 34-66% → g-2, 67-99% → g-3, 100% → g-4
         if (persen > 0) kelas = "g-" + (persen >= 100 ? 4 : Math.ceil(persen / 33.4));
         alasan.push(`${selesai}/${target} done (${persen}%)`);
     }
@@ -1682,7 +1691,6 @@ function renderCalendar() {
     const adaCatatan = new Set(notes.map((n) => n.note_date));
     calendarGrid.innerHTML = "";
 
-    // judul hari: Senin - Minggu
     ["M", "T", "W", "T", "F", "S", "S"].forEach((h) => {
         const el = document.createElement("span");
         el.className = "cal-head";
@@ -1690,7 +1698,6 @@ function renderCalendar() {
         calendarGrid.appendChild(el);
     });
 
-    // kotak kosong sebelum tanggal 1 (supaya tanggal 1 jatuh di kolom harinya)
     const geser = (dates[0].getDay() + 6) % 7;
     for (let i = 0; i < geser; i++) {
         const kosong = document.createElement("span");
@@ -1722,7 +1729,6 @@ function renderCalendar() {
     });
 }
 
-// tombol filter: All / Critical / Important / Routine
 calFilter.querySelectorAll("button").forEach((btn) => {
     btn.addEventListener("click", () => {
         filterKalender = btn.dataset.filter;
@@ -1731,12 +1737,8 @@ calFilter.querySelectorAll("button").forEach((btn) => {
     });
 });
 
-// =====================================================
-// 15. ACTIVE PROJECTS
-// =====================================================
-let modeProject = null;   // id project yang diedit, null = tambah baru
+let modeProject = null; 
 
-// status deadline: teks + warna
 function statusProject(p) {
     if (p.done) return { teks: "Done", kelas: "done" };
 
@@ -1788,7 +1790,6 @@ function renderProjects() {
         info.append(nama, meta);
         li.append(check, info, badge, hapus);
 
-        // drag hanya untuk mengubah urutan di card ini (card lain tidak menerima "project")
         li.draggable = true;
         pasangDrag(li, { type: "project", id: p.id });
         pasangUrut(
@@ -1867,7 +1868,6 @@ async function deleteProject(id) {
     }
 }
 
-// sama seperti pindahUrutan habit, tapi untuk project
 async function pindahUrutanProject(dragId, targetId, diAtas) {
     const urutan = projects.map((p) => p.id).filter((id) => id !== dragId);
     let posisi = urutan.indexOf(targetId);
@@ -1891,10 +1891,7 @@ projectModal.addEventListener("click", (e) => {
     if (e.target === projectModal) closeProjectModal();
 });
 
-// =====================================================
-// 16. NOTES (bentuk chat)
-// =====================================================
-let notes = [];   // catatan di bulan yang sedang dilihat
+let notes = [];   
 
 async function loadNotes() {
     const awal = toKey(dates[0]);
@@ -1933,7 +1930,7 @@ function renderNotes() {
     hariItu.forEach((note) => {
         const bubble = document.createElement("div");
         bubble.className = "note-bubble";
-        bubble.textContent = note.content;   // textContent → aman dari HTML berbahaya
+        bubble.textContent = note.content;  
 
         const jam = document.createElement("span");
         jam.className = "note-time";
@@ -1949,7 +1946,7 @@ function renderNotes() {
         notesList.appendChild(bubble);
     });
 
-    notesList.scrollTop = notesList.scrollHeight;   // gulir ke pesan terbaru
+    notesList.scrollTop = notesList.scrollHeight;  
 }
 
 async function kirimNote() {
@@ -1980,7 +1977,6 @@ async function deleteNote(id) {
     }
 }
 
-// kotak tulisan ikut memanjang saat teksnya beberapa baris
 function aturTinggiInput() {
     noteInput.style.height = "auto";
     noteInput.style.height = noteInput.scrollHeight + "px";
@@ -1988,7 +1984,6 @@ function aturTinggiInput() {
 
 noteInput.addEventListener("input", aturTinggiInput);
 
-// Enter = kirim, Shift + Enter = baris baru
 noteInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -2001,9 +1996,6 @@ noteForm.addEventListener("submit", (e) => {
     kirimNote();
 });
 
-// =====================================================
-// 17. KLIK CARD → GARIS UNGU
-// =====================================================
 document.querySelectorAll(".card").forEach((card) => {
     card.addEventListener("click", () => {
         document.querySelectorAll(".card.selected").forEach((c) => c.classList.remove("selected"));
@@ -2011,35 +2003,28 @@ document.querySelectorAll(".card").forEach((card) => {
     });
 });
 
-// =====================================================
-// 18. TOPBAR SAAT DI-SCROLL + MENU NAVIGASI
-// =====================================================
-// tiap tombol menu punya data-target = id bagian yang dituju
 const navLinks = document.querySelectorAll(".nav .pill");
-let menuDikunci = false;   // true = baru saja diklik, jangan diubah oleh scroll otomatis
+let menuDikunci = false;   
 
 navLinks.forEach((link) => {
     link.addEventListener("click", (e) => {
-        e.preventDefault();   // jangan pindah halaman
+        e.preventDefault();   
         $(link.dataset.target).scrollIntoView({ behavior: "smooth", block: "start" });
         navLinks.forEach((l) => l.classList.toggle("active", l === link));
         menuDikunci = true;
     });
 });
 
-// begitu user scroll sendiri (roda mouse / sentuh / keyboard), menu kembali otomatis
 ["wheel", "touchmove", "keydown"].forEach((jenis) => {
     window.addEventListener(jenis, () => (menuDikunci = false), { passive: true });
 });
 
-// tombol menu yang aktif = bagian terakhir yang sudah lewat di bawah topbar
 function aturMenuAktif() {
     if (menuDikunci) return;
     let aktif = navLinks[0];
     navLinks.forEach((link) => {
         if ($(link.dataset.target).getBoundingClientRect().top <= 120) aktif = link;
     });
-    // sudah mentok di bawah halaman → menu terakhir yang aktif
     if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) {
         aktif = navLinks[navLinks.length - 1];
     }
@@ -2054,8 +2039,5 @@ function aturTopbar() {
 window.addEventListener("scroll", aturTopbar, { passive: true });
 aturTopbar();
 
-// =====================================================
-// 19. JALANKAN
-// =====================================================
 gantiBulan(viewYear, viewMonth);
 loadData();
