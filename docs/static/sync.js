@@ -9,6 +9,8 @@
         apiKey: "AIzaSyCCeiCPVVzPjeJ7wkJEtWvC0A1h_GKJ9SA",
         projectId: "my-habit-5b829",
     };
+    // Web client ID (auto created by Google Service): dipakai login Google di APK
+    const GOOGLE_WEB_CLIENT_ID = "916060792654-q1pesh33ffqss9mo69a0jaj9t2aopm2i.apps.googleusercontent.com";
     const KUNCI_SESI = "myhabit_sync_v1";
     const urlDokumen = (uid) =>
         `https://firestore.googleapis.com/v1/projects/${FIREBASE.projectId}/databases/(default)/documents/users/${uid}`;
@@ -54,7 +56,29 @@
             if (!hasil || hasil.error) throw new Error((hasil && hasil.error) || "Sign-in cancelled.");
             return hasil.id_token;
         }
-        throw new Error("Sign in with Google isn't available here yet.");
+        // APK: pemilih akun Google bawaan HP (plugin @capgo/capacitor-social-login)
+        const loginAndroid = pluginLoginAndroid();
+        if (loginAndroid) {
+            if (!googleAndroidSiap) {
+                await loginAndroid.initialize({
+                    google: { webClientId: GOOGLE_WEB_CLIENT_ID, skipAuthOnlyAuthorizationAfterSignIn: true },
+                });
+                googleAndroidSiap = true;
+            }
+            const hasil = await loginAndroid.login({ provider: "google", options: {} });
+            const idToken = hasil && hasil.result && hasil.result.idToken;
+            if (!idToken) throw new Error("Google did not return an ID token.");
+            return idToken;
+        }
+
+        throw new Error("Sign in with Google is available in the My Habit app for Windows and Android.");
+    }
+
+    let googleAndroidSiap = false;
+    function pluginLoginAndroid() {
+        const cap = window.Capacitor;
+        if (!cap || !cap.isNativePlatform || !cap.isNativePlatform() || !cap.Plugins) return null;
+        return cap.Plugins.SocialLogin || null;
     }
 
     // ---------- 2) tukar ID token Google dengan sesi Firebase ----------
@@ -215,7 +239,7 @@
     async function masuk() {
         const tombol = document.getElementById("signInBtn");
         tombol.disabled = true;
-        tampilkanStatus("Finish signing in in your browser…");
+        tampilkanStatus(window.pywebview ? "Finish signing in in your browser…" : "Signing in…");
         try {
             await masukFirebase(await ambilIdTokenGoogle());
             tampilkanStatus();
@@ -228,6 +252,9 @@
     }
 
     function keluar() {
+        // APK: lupakan akun yang dipilih, supaya login berikutnya bisa memilih akun lain
+        const loginAndroid = pluginLoginAndroid();
+        if (loginAndroid && googleAndroidSiap) loginAndroid.logout({ provider: "google" }).catch(() => {});
         sesi = null;
         simpanSesi();
         tampilkanStatus();
