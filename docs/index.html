@@ -46,14 +46,18 @@
                     <ul class="notif-list" id="notifList"></ul>
                 </div>
             </div>
-            <!-- menu data: Export / Import (data versi lokal hanya ada di perangkat ini) -->
+            <!-- menu data: login Google (sync) + Export / Import backup -->
             <div class="notif-wrap">
                 <button class="avatar" id="menuBtn" title="Your data">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
                 </button>
                 <div class="notif-panel data-menu" id="dataMenu">
                     <div class="notif-head"><b>Your data</b></div>
-                    <p class="data-note">Everything is saved only on this device. Export a backup regularly, or to move to another device.</p>
+                    <p class="data-note sync-status" id="syncStatus">Sign in with Google to keep your data in your account and use it on other devices.</p>
+                    <button class="data-btn google" id="signInBtn">Sign in with Google</button>
+                    <button class="data-btn light" id="syncNowBtn" hidden>Sync now</button>
+                    <button class="data-btn light" id="signOutBtn" hidden>Sign out</button>
+                    <div class="data-sep">Backup file</div>
                     <button class="data-btn" id="exportBtn">Export backup (.json)</button>
                     <button class="data-btn light" id="importBtn">Import backup</button>
                     <input type="file" id="importFile" accept=".json,application/json,text/plain,application/octet-stream" hidden>
@@ -430,5 +434,6 @@
     <script src="static/script.js"></script>
     <script src="static/backup.js"></script>
     <script src="static/dragscroll.js"></script>
+    <script src="static/sync.js"></script>
 </body>
 </html>

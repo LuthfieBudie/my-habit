@@ -8,3 +8,4 @@ node_modules/
 www/
 android/
 package-lock.json
+oauth_desktop.json
