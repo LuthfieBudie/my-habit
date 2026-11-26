@@ -480,7 +480,7 @@ a.icon-btn {
 
 /* turun = ungu (seperti gaya Truck&Co), bukan merah menyala */
 .tag.red {
-    background: var(--purple);
+    background: var(--red);
     color: #fff;
 }
 
